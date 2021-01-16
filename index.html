@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        #wrapBg{/*游戏背景*/
+            width: 343px;
+            height: 480px;
+            margin: 0 auto;
+            background-image:url(images/bg.jpg);
+            position: relative;
+            top: 100px;
+            overflow: hidden;
+        }
+        #headTitle{/*开始标题*/
+            width: 236px;
+            height: 77px;
+            background-image: url(images/head.jpg);
+            position: absolute;
+            left: 53px;
+            top: 100px;
+            animation: mytitle 1s infinite;   /*  动画 */
+        }
+        #headBird{/*开始标题中的小鸟*/
+            width:40px;
+            height:26px;
+            background-image: url(images/bird0.png);
+            float:right;
+            margin-top: 25px;
+            animation: mybird 1s infinite;
+        }
+        /*帧，动画都是由帧组成的*/
+        @keyframes mytitle {
+            0%{
+                top: 100px;
+            }
+            50%{
+                top: 110px;
+            }
+            100%{
+                top: 100px;
+            }
+        }
+        @keyframes mybird {
+            0%{
+                background-image: url(images/bird0.png);
+            }
+            50%{
+                background-image: url(images/bird1.png);
+            }
+            100%{
+                background-image: url(images/bird0.png);
+            }
+        }
+
+        
+        
+        
+        
+        #startBtn{/*开始按钮*/
+            width: 85px;
+            height: 29px;
+            padding: 0;
+            margin: 0;
+            background-image: url(images/start.jpg);
+            position: absolute;
+            left: 129px;
+            top: 250px;
+        }
+        #grassLand{/*草地*/
+            height: 14px;
+            width: 686px;
+            background-image: url(images/banner.jpg);
+            position: absolute;
+            top: 423px;
+            left:0px;
+            animation: mygrass 6s linear infinite;
+        }
+        @keyframes mygrass {
+            0%{
+                left:0px;
+            }
+            100%{
+                left:-343px;
+            }
+
+        }
+
+        /*游戏小鸟的样式*/
+        #bird{
+            width:40px;
+            height:28px;
+            background: url(images/bird0.png) no-repeat;
+            position:absolute;
+            z-index: 1;
+            top:200px;
+            left:50px;
+        }
+        #score{
+            font-size: 30px;
+            font-weight: bold;
+            position:absolute;
+            z-index: 1;
+            top:50px;
+            left:50%;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="wrapBg">  <!--游戏背景-->
+        <div id="headTitle"> <!--开始标题-->
+            <div id="headBird"></div> <!--标题中的小鸟-->
+        </div>
+        <div id="startBtn" ></div> <!--开始按钮-->
+        <div id="grassLand"></div>
+        <div id="score">1</div>
+    </div>
+
+    <script>
+        //根据ID获取标签
+        var wrapBg=document.querySelector("#wrapBg");
+        var startBtn=document.querySelector("#startBtn");
+        var headTitle=document.querySelector("#headTitle");
+        var headBird=document.querySelector("#headBird");
+        var score=document.querySelector("#score");
+
+        var pipingArr = [];
+        var pDistance=random(130,250);
+
+        //分数的定时器
+        var scoreTimer=null;
+
+        //点击事件
+        startBtn.onclick=function(){
+            headTitle.style.display="none";
+            headBird.style.display="none";
+            startBtn.style.display="none";
+            score.style.display="block";
+            scoreTimer=setInterval(function(){
+                score.innerHTML=parseInt(score.innerHTML)+1;
+            },1000);
+
+            //显示像素鸟
+            bird.show();
+            //像素鸟飞行
+            bird.flyBird();
+            bird.wing();
+
+            //点击屏幕一下，像素鸟向上飞，top减少，所以速度要变成负值
+            wrapBg.onclick = function(){
+                bird.fallSpeed = -8;
+            };
+
+
+            //一开始创建一个管道，添加到数组中
+            var p=new piping();
+            p.createPiping();
+            pipingArr.push(p);
+
+
+
+        }
+
+
+        /***********************对象文件**********************/
+        var bird={
+            flyTimer:null,//小鸟飞翔定时器
+            wingTimer:null,//小鸟翅膀摆动定时器
+            fallSpeed: 0, //小鸟下落速度
+            el:document.createElement("div"),
+            //将像素鸟添加到页面中
+            show:function(){
+                bird.el.setAttribute("id","bird");
+                wrapBg.appendChild( bird.el );
+            },
+            //像素鸟飞行的方法
+            flyBird:function(){
+                //标签的样式可以通过动画来实现，但是一些需要计算，复杂的动画，我们可以用定时器
+                bird.flyTimer = setInterval(function(){
+                    //改变像素鸟距顶部的距离                   每40毫秒向下移动1px
+                    bird.el.style.top = bird.el.offsetTop + bird.fallSpeed++ + "px";
+                    if (bird.el.offsetTop >= 395) {
+                        bird.fallSpeed = 0;
+                        clearInterval(bird.flyTimer); //一旦飞到地面，清除定时器
+                        clearInterval(bird.wingTimer);
+                        clearInterval(scoreTimer);
+                    }
+                    //不能飞出边界
+                    if( bird.el.offsetTop < 0 ) {
+                        bird.fallSpeed = 2;
+                    }
+                    //像素鸟不能超过一定的速度
+                    if( bird.fallSpeed > 16 ) {
+                        bird.fallSpeed = 16;
+                    }
+                },40);
+            },
+            //翅膀的煽动
+            wing:function(){
+                var up = ["url(images/up_bird0.png)", "url(images/up_bird1.png)"];
+                var down = ["url(images/down_bird0.png)", "url(images/down_bird1.png)"];
+                var i = 0, j = 0;
+                bird.wingTimer = setInterval(function(){
+                    if (bird.fallSpeed > 0) {
+                        bird.el.style.backgroundImage = down[i++];
+                        if (i==2) {i = 0}
+                    }if (bird.fallSpeed < 0) {
+                        bird.el.style.backgroundImage = up[j++];
+                        if (j==2) {j = 0}
+                    }
+                },160);//逐帧动画，小鸟煽动翅膀
+
+            }
+        }
+
+
+
+        function piping(){
+            //上管道
+            this.topDiv=null;
+            //下管道
+            this.bottomDiv=null;
+            //上管道的高度
+            this.bottomHeight=random(0,150);
+            //中间高度
+            this.mHeight=random(150,160);
+            //下管道的高度
+            this.topHeight=312 - this.bottomHeight - this.mHeight;
+
+            //创建div，因为我们在界面上没有div
+            this.createDiv=function(url, height, positionType, left, top){
+                var newDiv = document.createElement("div");
+                newDiv.style.width = "62px";
+                newDiv.style.height = height;
+                newDiv.style.position = positionType;
+                newDiv.style.left = left;
+                newDiv.style.top = top;
+                newDiv.style.backgroundImage = url;  //"url(/img/0.jpg)"
+                return newDiv;
+            };
+            this.createPiping=function(){
+                //上方管道分为两部分，一部分是上面的长度，随机产生，另一部分就是上管道的界面，高度定死
+                var upDiv1 = this.createDiv("url(images/up_mod.png)", this.topHeight + "px");
+                var upDiv2 = this.createDiv("url(images/up_pipe.png)", "60px");
+                this.topDiv = this.createDiv(null, null, "absolute", "450px");
+                this.topDiv.appendChild(upDiv1);
+                this.topDiv.appendChild(upDiv2);//生成上方管道
+
+                //同上
+                var downDiv1 = this.createDiv("url(images/down_pipe.png)", "60px");
+                var downDiv2 = this.createDiv("url(images/down_mod.png)", this.bottomHeight +"px");
+                this.bottomDiv = this.createDiv(null, null, "absolute", "450px", 363 - this.bottomHeight + "px");
+                this.bottomDiv.appendChild(downDiv1);
+                this.bottomDiv.appendChild(downDiv2); //生成下方的管道
+
+                //全部添加到界面中
+                wrapBg.appendChild(this.topDiv);
+                wrapBg.appendChild(this.bottomDiv);
+            };
+            //移动，上下部分管道都向左移动
+            this.move=function(){
+                this.topDiv.style.left = this.topDiv.offsetLeft - 3 + "px";
+                this.bottomDiv.style.left = this.bottomDiv.offsetLeft - 3 + "px";
+            }
+        }
+
+
+        //移动管道
+        var mytimes=setInterval(function(){
+            if(pipingArr.length){
+                for(var i=0;i<pipingArr.length;i++){
+                    //管道移动
+                    pipingArr[i].move();
+                    //碰撞检测
+                    var x=boom(pipingArr[i].topDiv,bird.el);
+                    var y=boom(pipingArr[i].bottomDiv,bird.el);
+                    var z=bird.el.offsetTop >= 390;
+
+                    //碰到上，或者碰到下，或者鸟落地
+                    if( x || y || z){
+                        window.clearInterval(mytimes);
+                        window.clearInterval(scoreTimer);
+                        bird.fallSpeed=0;
+                        wrapBg.onclick=null;
+
+                        //游戏结束
+                        alert("游戏结束，您的分数为：" + score.innerHTML);
+                    }
+                }
+
+                //当移动到一定位置的时候，创建新的管道
+                if(  pipingArr[pipingArr.length-1].topDiv.offsetLeft < (450-pDistance)  ){
+                    pDistance=random(130,250);
+                    var newp=new piping();
+                    newp.createPiping();
+                    pipingArr.push(newp);
+                }
+                //移动到最左边的时候，就移除掉
+                if(  pipingArr[0].topDiv.offsetLeft < -50  ){
+                    wrapBg.removeChild( pipingArr[0].topDiv );
+                    wrapBg.removeChild( pipingArr[0].bottomDiv );
+                    //移除数组第一个
+                    pipingArr.shift(pipingArr[0]);
+                }
+            }
+        },30);
+
+
+
+        /********************工具方法*************************/
+        //给定一个范围，返回随机数
+        function random(min,max){
+            return parseInt(Math.random() * (max - min + 1) + min);
+        }
+
+        function boom(obj1,obj2){
+            var obj1Left = obj1.offsetLeft;
+            var obj1Width = obj1.offsetLeft + obj1.offsetWidth;
+            var obj1Top = obj1.offsetTop;
+            var obj1Height = obj1.offsetTop + obj1.offsetHeight;
+
+            var obj2Left = obj2.offsetLeft;
+            var obj2Width = obj2.offsetLeft + obj2.offsetWidth;
+            var obj2Top = obj2.offsetTop;
+            var obj2Height = obj2.offsetTop + obj2.offsetHeight;
+
+            if (!(obj1Left > obj2Width || obj1Width < obj2Left || obj1Top > obj2Height || obj1Height < obj2Top)) {
+                return true;
+            }
+            return false;
+        }
+    </script>
+</body>
+</html>
